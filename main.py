@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from tqdm import tqdm
 
+
 def get_token(user):
     if isinstance(user, VkUser):
         with open('vk_token.txt', 'r') as file_object:
@@ -15,6 +16,7 @@ def get_token(user):
     else:
         return None
 
+
 def create_json(list_photos):
     json_file = []
     for photo in list_photos:
@@ -26,8 +28,8 @@ def create_json(list_photos):
 
 
 class VkUser:
-
     url = 'https://api.vk.com/method/'
+
     def __init__(self, version):
         self.token = get_token(self)
         self.version = version
@@ -38,11 +40,11 @@ class VkUser:
 
     def get_id(self, username):
         get_id_url = self.url + 'users.get'
-        get_id_params = {'user_ids' : username}
+        get_id_params = {'user_ids': username}
         res = requests.get(get_id_url, params={**self.params, **get_id_params})
         res = res.json()
-        if res.get('error') != None:
-            print('Ошибка! Пользователь не найден')
+        if res.get('error') is None:
+            print('Ошибка 113! Неверный идентификатор пользователя')
             return None
         else:
             return res['response'][0].get('id')
@@ -52,18 +54,29 @@ class VkUser:
             user_id = int(user_id)
         else:
             user_id = self.get_id(user_id)
-            if user_id == None:
+            if user_id is None:
                 return None
+        album = input('''Введите с какого альбома вы хотите скачать фото:
+            1 - фото профиля
+            2 - фото со стены
+            3 - сохраненные фото
+            ''')
+        album_id = {
+            '1': 'profile',
+            '2': 'wall',
+            '3': 'saved'
+        }
         profile_photos_url = self.url + 'photos.get'
         profile_photos_params = {
             'owner_id': user_id,
+            'album_id': album_id[album],
             'extended': 1,
             'photo_sizes': 1,
             'count': count
         }
         res = requests.get(profile_photos_url, params={**self.params, **profile_photos_params})
         res = res.json()
-        if res.get('error') != None:
+        if res.get('error') is None:
             print('Ошибка! Пользователь не найден')
             return None
         res = res['response']['items']
@@ -75,8 +88,10 @@ class VkUser:
             photo_url = ''
             photo_type = ''
             if str(item['likes']['count']) + '.jpg' in list_name:
-                list_name.append(str(item['likes']['count']) + '-' + datetime.utcfromtimestamp(item['date']).strftime('%Y-%m-%d') + '.jpg')
-                dict_photos['file_name'] = str(item['likes']['count']) + '-' + datetime.utcfromtimestamp(item['date']).strftime('%Y-%m-%d') + '.jpg'
+                list_name.append(str(item['likes']['count']) + '-' + datetime.utcfromtimestamp(item['date']).strftime(
+                    '%Y-%m-%d') + '.jpg')
+                dict_photos['file_name'] = str(item['likes']['count']) + '-' + datetime.utcfromtimestamp(
+                    item['date']).strftime('%Y-%m-%d') + '.jpg'
             else:
                 list_name.append(str(item['likes']['count']) + '.jpg')
                 dict_photos['file_name'] = str(item['likes']['count']) + '.jpg'
@@ -114,7 +129,7 @@ class YaUploader:
         return name
 
     def upload(self):
-        if self.list_photos == None:
+        if self.list_photos is None:
             print('Фото не найдены, загрузка не удалась!')
             return None
         upload_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
@@ -135,7 +150,7 @@ class YaUploader:
 if __name__ == "__main__":
     vk_client = VkUser('5.131')
     user_ids = input('Введите id пользователя или его username: ')
-    count_foto = int(input('Введите количество загружаемых фото: '))
-    photo_list = vk_client.get_profile_photos(user_ids, count_foto)
+    count_photo = int(input('Введите количество загружаемых фото: '))
+    photo_list = vk_client.get_profile_photos(user_ids, count_photo)
     yadisk = YaUploader(photo_list)
     yadisk.upload()
