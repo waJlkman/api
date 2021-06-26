@@ -43,7 +43,7 @@ class VkUser:
         get_id_params = {'user_ids': username}
         res = requests.get(get_id_url, params={**self.params, **get_id_params})
         res = res.json()
-        if res.get('error') is None:
+        if res.get('error') is not None:
             print('Ошибка 113! Неверный идентификатор пользователя')
             return None
         else:
@@ -76,7 +76,7 @@ class VkUser:
         }
         res = requests.get(profile_photos_url, params={**self.params, **profile_photos_params})
         res = res.json()
-        if res.get('error') is None:
+        if res.get('error') is not None:
             print('Ошибка! Пользователь не найден')
             return None
         res = res['response']['items']
